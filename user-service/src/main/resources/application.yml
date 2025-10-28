@@ -1,20 +1,20 @@
 server:
-  port: 8081
+  port: ${PORT:8081}
 
 spring:
   application:
     name: user-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/userdb
-    username: postgres
-    password: brandon123
+    url: jdbc:postgresql://dpg-d40fp9d5bbfc73dl2m60-a.oregon-postgres.render.com:5432/microservicesdb_kum6
+    username: microservices_admin
+    password: Jf62SSkS4Kx3UqPIZQK0wEdMp4STS8SH
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -22,4 +22,4 @@ spring:
 
 logging:
   level:
-    com.microservices.user: DEBUG
+    com.microservices.user: INFO

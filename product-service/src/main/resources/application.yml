@@ -1,20 +1,20 @@
 server:
-  port: 8082
+  port: ${PORT:8082}
 
 spring:
   application:
     name: product-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/productdb
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://dpg-d40fp9d5bbfc73dl2m60-a.oregon-postgres.render.com:5432/microservicesdb_kum6
+    username: microservices_admin
+    password: Jf62SSkS4Kx3UqPIZQK0wEdMp4STS8SH
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -22,6 +22,4 @@ spring:
 
 logging:
   level:
-    com.microservices.product: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.microservices.product: INFO
