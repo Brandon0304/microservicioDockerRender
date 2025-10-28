@@ -1,0 +1,128 @@
+version: '3.8'
+
+# ========== SERVICIOS ==========
+services:
+
+  # ========== BASE DE DATOS POSTGRESQL ==========
+  postgres:
+    # Imagen oficial de PostgreSQL versión 16 (Alpine = ligera)
+    image: postgres:16-alpine
+
+    # Nombre del contenedor
+    container_name: postgres-db
+
+    # Variables de entorno para configurar PostgreSQL
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    # Mapeo de puertos: host:contenedor
+    # 5432 de tu PC se conecta al 5432 del contenedor
+    ports:
+      - "5432:5432"
+
+    # Volúmenes: persistencia de datos
+    volumes:
+      # Datos de PostgreSQL (persisten aunque elimines el contenedor)
+      - postgres_data:/var/lib/postgresql/data
+      # Script de inicialización (crea las bases de datos)
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+    # Red interna para que los servicios se comuniquen
+    networks:
+      - microservices-network
+
+    # Health check: verifica que PostgreSQL esté listo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s      # Chequea cada 10 segundos
+      timeout: 5s        # Espera 5 segundos por respuesta
+      retries: 5         # Reintenta 5 veces antes de fallar
+
+  # ========== USER SERVICE ==========
+  user-service:
+    # Construye la imagen desde el Dockerfile en ./user-service
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+
+    container_name: user-service
+
+    # Mapeo de puertos
+    ports:
+      - "8081:8081"
+
+    # Variables de entorno (sobreescriben application.yml)
+    environment:
+      # Nota: usa "postgres" (nombre del servicio) en lugar de "localhost"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+    # Dependencias: espera a que postgres esté SALUDABLE antes de iniciar
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - microservices-network
+
+    # Si falla, reinicia automáticamente
+    restart: on-failure
+
+  # ========== PRODUCT SERVICE ==========
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+
+    container_name: product-service
+
+    ports:
+      - "8082:8082"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/productdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - microservices-network
+
+    restart: on-failure
+
+  # ========== API GATEWAY ==========
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+
+    container_name: api-gateway
+
+    ports:
+      - "8080:8080"
+
+    # Depende de los otros microservicios
+    depends_on:
+      - user-service
+      - product-service
+
+    networks:
+      - microservices-network
+
+    restart: on-failure
+
+# ========== REDES ==========
+networks:
+  # Red interna para que los servicios se comuniquen entre sí
+  microservices-network:
+    driver: bridge
+
+# ========== VOLÚMENES ==========
+volumes:
+  # Volumen para persistir los datos de PostgreSQL
+  postgres_data:
